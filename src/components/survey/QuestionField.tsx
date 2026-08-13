@@ -1,5 +1,13 @@
-import type { ReactNode } from "react";
+import { useState } from "react";
+import type { DragEvent, ReactNode } from "react";
 import type { AnswerValue, Question } from "@/lib/survey/types";
+
+function reorder(order: string[], from: number, to: number): string[] {
+  const next = [...order];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
 
 type QuestionFieldProps = {
   question: Question;
@@ -32,6 +40,9 @@ function Chip({
 }
 
 export function QuestionField({ question, value, onChange }: QuestionFieldProps) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   const label = (
     <label className="block text-base font-medium text-slate-800">
       {question.label}
@@ -164,26 +175,64 @@ export function QuestionField({ question, value, onChange }: QuestionFieldProps)
     const labelByCode = new Map(question.options?.map((o) => [o.code, o.label]));
 
     function move(index: number, direction: -1 | 1) {
-      const next = [...order];
       const target = index + direction;
-      if (target < 0 || target >= next.length) return;
-      [next[index], next[target]] = [next[target], next[index]];
-      onChange(question.key, next);
+      if (target < 0 || target >= order.length) return;
+      onChange(question.key, reorder(order, index, target));
+    }
+
+    function handleDragStart(e: DragEvent<HTMLLIElement>, index: number) {
+      setDraggedIndex(index);
+      e.dataTransfer.effectAllowed = "move";
+      // Firefox requires setData to be called for drag to initiate.
+      e.dataTransfer.setData("text/plain", String(index));
+    }
+
+    function handleDragOver(e: DragEvent<HTMLLIElement>, index: number) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDragOverIndex(index);
+      if (draggedIndex === null || draggedIndex === index) return;
+      onChange(question.key, reorder(order, draggedIndex, index));
+      setDraggedIndex(index);
+    }
+
+    function handleDrop(e: DragEvent<HTMLLIElement>) {
+      e.preventDefault();
+    }
+
+    function handleDragEnd() {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
     }
 
     return (
       <div className="flex flex-col gap-2">
         {label}
-        {question.hint ? (
-          <p className="text-sm text-slate-400">{question.hint}</p>
-        ) : null}
+        <p className="text-sm text-slate-400">
+          {question.hint ?? "Первая в списке — самая важная."} Перетащите пункты за
+          значок ⠿ мышью или используйте стрелки ↑↓.
+        </p>
         <ol className="flex flex-col gap-2">
           {order.map((code, index) => (
             <li
               key={code}
-              className="flex items-center justify-between gap-3 rounded-xl border border-brand-surface bg-white px-4 py-2"
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
+              className={`flex cursor-grab items-center justify-between gap-3 rounded-xl border bg-white px-4 py-2 transition-colors active:cursor-grabbing ${
+                draggedIndex === index
+                  ? "border-brand opacity-50"
+                  : dragOverIndex === index
+                    ? "border-brand"
+                    : "border-brand-surface"
+              }`}
             >
-              <span className="text-sm text-slate-700">
+              <span className="flex items-center text-sm text-slate-700">
+                <span aria-hidden="true" className="mr-3 select-none text-slate-300">
+                  ⠿
+                </span>
                 <span className="mr-2 text-slate-400">{index + 1}.</span>
                 {labelByCode.get(code) ?? code}
               </span>

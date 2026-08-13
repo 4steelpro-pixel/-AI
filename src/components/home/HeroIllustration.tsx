@@ -15,19 +15,20 @@ export function HeroIllustration() {
       <circle cx="160" cy="70" r="26" fill="#E1F5EE" />
       <path
         d="M160 96c-24 0-40 16-40 38h80c0-22-16-38-40-38Z"
-        fill="#1D9E75"
+        fill="#00B2AB"
       />
-      <circle cx="160" cy="66" r="18" fill="#1D9E75" />
+      <circle cx="160" cy="66" r="18" fill="#00B2AB" />
       <path
         d="M60 150c10-30 30-46 55-52M260 150c-10-30-30-46-55-52"
-        stroke="#0F6E56"
+        stroke="#017084"
         strokeWidth="4"
         strokeLinecap="round"
         fill="none"
         strokeDasharray="2 10"
       />
-      <circle cx="55" cy="156" r="6" fill="#0F6E56" />
-      <circle cx="265" cy="156" r="6" fill="#1D9E75" />
+      <circle cx="55" cy="156" r="6" fill="#017084" />
+      <circle cx="265" cy="156" r="6" fill="#00B2AB" />
+
     </svg>
   );
 }

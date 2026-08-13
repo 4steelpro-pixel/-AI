@@ -1,6 +1,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { Client } from "pg";
+import { loadEnv } from "./loadEnv";
+
+loadEnv();
 
 async function main() {
   const connectionString = process.env.DATABASE_URL;

@@ -43,3 +43,14 @@ next-env.d.ts
 testfile123.txt
 rtest_b.txt
 testfile123.txt
+
+# local dev artifacts
+dev-server.log
+start.bat
+
+# archives and documents (not part of the codebase)
+*.zip
+*.docx
+*.pptx
+/-AI/
+/public/example-report.pdf

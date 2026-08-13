@@ -6,7 +6,8 @@ import { ProgressBar } from "./ProgressBar";
 import { QuestionField } from "./QuestionField";
 import { ReportView } from "./ReportView";
 import { Modal } from "@/components/Modal";
-import { getBaseSeries, getRelocationSeries } from "@/lib/survey/questions";
+import { getBaseSeries } from "@/lib/survey/questions";
+import { getApplicableRules } from "@/lib/survey/branchRules";
 import { buildAnalysisPayload } from "@/lib/survey/payload";
 import { trackEvent } from "@/lib/analytics/track";
 import type { Answers, AnswerValue, Category, Question, QuestionSeries } from "@/lib/survey/types";
@@ -49,16 +50,49 @@ export function SurveyFlow({ category }: { category: Category }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
   const [phase, setPhase] = useState<"questions" | "review" | "report">("questions");
-  const [relocationInserted, setRelocationInserted] = useState(false);
+  const [appliedRuleIds, setAppliedRuleIds] = useState<Set<string>>(() => new Set());
+  const branchRules = useMemo(() => getApplicableRules(category), [category]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [report, setReport] = useState<CareerReport | null>(null);
   const [exporting, setExporting] = useState<"pdf" | "docx" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [accessChecked, setAccessChecked] = useState(false);
 
   useEffect(() => {
     trackEvent("survey_started", sessionId, { category });
   }, [sessionId, category]);
+
+  // Проверяем доступ к тесту (если оплата обязательна — только после оплаты)
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+    fetch("/api/billing/access", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        // Доступ открыт (в т.ч. когда оплата не требуется — токен не нужен)
+        if (data.ok && data.allowed) {
+          setAccessChecked(true);
+          return;
+        }
+        // Оплата требуется, но доступа нет — на страницу оплаты
+        if (data.requirePayment) {
+          window.location.href = `/billing?category=${category}`;
+          return;
+        }
+        // Оплата не требуется, но нужна авторизация
+        if (!token) {
+          window.location.href = "/login";
+          return;
+        }
+        window.location.href = `/billing?category=${category}`;
+      })
+      .catch(() => {
+        window.location.href = `/billing?category=${category}`;
+      });
+  }, [category]);
+
 
   const currentSeries = series[currentIndex];
 
@@ -81,18 +115,23 @@ export function SurveyFlow({ category }: { category: Category }) {
   }, [currentSeries, answers]);
 
   function goNext() {
-    if (
-      !relocationInserted &&
-      currentSeries.id === "common-format-values" &&
-      answers.workFormatPreference === "travel" &&
-      answers.settlementType === "village"
-    ) {
+    const matchedRules = branchRules.filter(
+      (rule) =>
+        !appliedRuleIds.has(rule.id) &&
+        rule.afterSeriesId === currentSeries.id &&
+        rule.condition(answers),
+    );
+    if (matchedRules.length > 0) {
       setSeries((prev) => {
         const next = [...prev];
-        next.splice(currentIndex + 1, 0, getRelocationSeries());
+        next.splice(currentIndex + 1, 0, ...matchedRules.map((rule) => rule.buildSeries(answers)));
         return next;
       });
-      setRelocationInserted(true);
+      setAppliedRuleIds((prev) => {
+        const nextSet = new Set(prev);
+        matchedRules.forEach((rule) => nextSet.add(rule.id));
+        return nextSet;
+      });
     }
 
     trackEvent("survey_series_completed", sessionId, {

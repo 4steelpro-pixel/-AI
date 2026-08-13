@@ -17,7 +17,16 @@ const INTERESTS_COMMON: SelectOption[] = [
   { code: "engineering", label: "Техника и инженерия" },
   { code: "psychology", label: "Психология и общение с людьми" },
   { code: "business", label: "Предпринимательство и бизнес" },
+  { code: "medicine", label: "Медицина и здоровье" },
+  { code: "security", label: "Право и безопасность (силовые структуры)" },
+  { code: "production", label: "Производство и рабочие специальности" },
+  { code: "public_service", label: "Госслужба и социальная сфера" },
+  { code: "service", label: "Сфера услуг и сервис" },
 ];
+
+function scaleOptions(): SelectOption[] {
+  return [1, 2, 3, 4, 5].map((n) => ({ code: String(n), label: String(n) }));
+}
 
 const THINKING_STYLES: SelectOption[] = [
   { code: "people", label: "Работа с людьми" },
@@ -42,7 +51,40 @@ const VALUES: SelectOption[] = [
   { code: "balance", label: "Баланс работы и жизни" },
   { code: "career_growth", label: "Карьерный рост" },
   { code: "intellectual_challenge", label: "Интеллектуальный вызов" },
+  { code: "duty", label: "Чувство долга / служение обществу" },
 ];
+
+const SPECIALIZATION_AREAS: SelectOption[] = [
+  { code: "it", label: "IT и программирование" },
+  { code: "medicine", label: "Медицина и здоровье" },
+  { code: "engineering", label: "Инженерия и техника" },
+  { code: "creative", label: "Творчество и дизайн" },
+  { code: "business", label: "Бизнес и экономика" },
+  { code: "humanities", label: "Гуманитарные науки и языки" },
+  { code: "pedagogy", label: "Педагогика и психология" },
+  { code: "law", label: "Право и безопасность" },
+  { code: "working", label: "Рабочие специальности" },
+  { code: "service", label: "Сфера услуг и сервис" },
+  { code: "science", label: "Естественные науки" },
+  { code: "sport", label: "Спорт и физическая культура" },
+];
+
+const ATTRACTIVE_PROFESSIONS: SelectOption[] = [
+  { code: "programmer", label: "Программист / разработчик" },
+  { code: "doctor", label: "Врач / медсестра" },
+  { code: "engineer", label: "Инженер / конструктор" },
+  { code: "designer", label: "Дизайнер / художник" },
+  { code: "teacher", label: "Учитель / преподаватель" },
+  { code: "psychologist", label: "Психолог" },
+  { code: "lawyer", label: "Юрист" },
+  { code: "entrepreneur", label: "Предприниматель" },
+  { code: "military", label: "Военный / силовые структуры" },
+  { code: "worker", label: "Рабочая профессия (сварщик, электрик и т.д.)" },
+  { code: "journalist", label: "Журналист / блогер" },
+  { code: "sportsman", label: "Спортсмен / тренер" },
+  { code: "not_sure", label: "Пока не знаю" },
+];
+
 
 const COMMON_SERIES: QuestionSeries[] = [
   {
@@ -57,10 +99,88 @@ const COMMON_SERIES: QuestionSeries[] = [
         type: "single",
         options: SETTLEMENT_TYPES,
       },
+      {
+        key: "vahtaReadiness",
+        label: "Готовы ли вы к вахтовому методу работы?",
+        type: "single",
+        options: [
+          { code: "yes", label: "Да" },
+          { code: "no", label: "Нет" },
+          { code: "maybe", label: "Рассмотрю" },
+        ],
+      },
+      {
+        key: "relocationReadiness",
+        label:
+          "Готовы ли вы рассмотреть переезд в другой регион ради более высокого дохода или подходящей профессии?",
+        type: "single",
+        options: [
+          { code: "yes", label: "Да, готов(а) к переезду" },
+          { code: "maybe", label: "Возможно, в зависимости от условий" },
+          { code: "no", label: "Нет, хочу остаться в своём регионе" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "common-personality",
+    title: "Личностный профиль",
+    questions: [
+      {
+        key: "energySource",
+        label: "Где вы восстанавливаете силы — в общении с людьми или наедине?",
+        type: "single",
+        options: [
+          { code: "people", label: "В общении с людьми" },
+          { code: "alone", label: "Наедине" },
+          { code: "depends", label: "Зависит от ситуации" },
+        ],
+      },
+      {
+        key: "teamOrSolo",
+        label: "Вам комфортнее работать в команде или самостоятельно?",
+        type: "single",
+        options: [
+          { code: "team", label: "В команде" },
+          { code: "solo", label: "Самостоятельно" },
+          { code: "both", label: "И то, и другое" },
+        ],
+      },
+      {
+        key: "stressReaction",
+        label: "Как вы ведёте себя под давлением сроков?",
+        type: "single",
+        options: [
+          { code: "mobilize", label: "Мобилизуюсь и работаю быстрее" },
+          { code: "lost", label: "Теряюсь, мне нужно время" },
+          { code: "own_pace", label: "Работаю в своём темпе, не поддаюсь давлению" },
+        ],
+      },
+      {
+        key: "detailOrBigPicture",
+        label: "Что вам ближе — прорабатывать детали или видеть общую картину?",
+        type: "single",
+        options: [
+          { code: "details", label: "Детали и точность" },
+          { code: "big_picture", label: "Общая картина" },
+          { code: "both", label: "И то, и другое" },
+        ],
+      },
+      {
+        key: "workPace",
+        label: "Какой темп работы вам комфортен?",
+        type: "single",
+        options: [
+          { code: "fast", label: "Быстрый, динамичный" },
+          { code: "measured", label: "Размеренный, спокойный" },
+          { code: "flexible", label: "Гибкий, меняющийся" },
+        ],
+      },
     ],
   },
   {
     id: "common-interests",
+
     title: "Интересы и мышление",
     questions: [
       {
@@ -77,6 +197,41 @@ const COMMON_SERIES: QuestionSeries[] = [
         type: "multi",
         options: THINKING_STYLES,
       },
+      {
+        key: "helpingUrgentImportance",
+        label:
+          "Насколько вам важно напрямую помогать людям в сложных или экстренных ситуациях?",
+        hint: "1 — совсем не важно, 5 — очень важно",
+        type: "single",
+        options: scaleOptions(),
+      },
+      {
+        key: "riskResponsibilityWillingness",
+        label:
+          "Готовы ли вы к работе, связанной с физическим риском или высокой ответственностью за здоровье/жизнь других, ради ощущения значимости?",
+        hint: "1 — совсем не готов(а), 5 — полностью готов(а)",
+        type: "single",
+        options: scaleOptions(),
+      },
+      {
+        key: "hierarchyComfort",
+        label:
+          "Комфортно ли вам в структурах со строгой иерархией и дисциплиной (армия, полиция, госслужба)?",
+        type: "single",
+        options: [
+          { code: "yes", label: "Да" },
+          { code: "neutral", label: "Нейтрально" },
+          { code: "no", label: "Нет" },
+        ],
+      },
+      {
+        key: "physicalLaborEnjoyment",
+        label:
+          "Насколько вам нравится физический труд и работа руками (ремонт, сборка, стройка, обслуживание техники)?",
+        hint: "1 — совсем не нравится, 5 — очень нравится",
+        type: "single",
+        options: scaleOptions(),
+      },
     ],
   },
   {
@@ -88,6 +243,16 @@ const COMMON_SERIES: QuestionSeries[] = [
         label: "Предпочитаемый формат работы",
         type: "single",
         options: WORK_FORMATS,
+      },
+      {
+        key: "shiftWorkReadiness",
+        label: "Готовность к посменной работе / суткам через трое",
+        type: "single",
+        options: [
+          { code: "yes", label: "Да" },
+          { code: "no", label: "Нет" },
+          { code: "maybe", label: "Рассмотрю" },
+        ],
       },
       {
         key: "valuesRanking",
@@ -118,10 +283,259 @@ const RELOCATION_SERIES: QuestionSeries = {
   ],
 };
 
+const TEEN_COMMON_SERIES: QuestionSeries[] = [
+  {
+    id: "teen-geo",
+    title: "География",
+    questions: [
+      { key: "country", label: "Страна", type: "text" },
+      { key: "region", label: "Регион / область", type: "text" },
+      {
+        key: "settlementType",
+        label: "Тип и численность населённого пункта",
+        type: "single",
+        options: SETTLEMENT_TYPES,
+      },
+      {
+        key: "teenEducationRelocation",
+        label:
+          "Готовы ли вы рассмотреть обучение в другом регионе или городе, если там есть подходящий вуз или колледж?",
+        type: "single",
+        options: [
+          { code: "yes", label: "Да, готов(а) уехать учиться" },
+          { code: "maybe", label: "Возможно, в зависимости от условий" },
+          { code: "no", label: "Нет, хочу учиться рядом с домом" },
+        ],
+      },
+      {
+        key: "teenDormReadiness",
+        label:
+          "Готовы ли вы к переезду в общежитие или к самостоятельной жизни в другом городе?",
+        type: "single",
+        options: [
+          { code: "yes", label: "Да, готов(а)" },
+          { code: "maybe", label: "Возможно, если будет поддержка" },
+          { code: "no", label: "Нет, пока не готов(а)" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "teen-personality",
+    title: "Личностный профиль",
+    questions: [
+      {
+        key: "energySource",
+        label: "Где вы восстанавливаете силы — в общении с людьми или наедине?",
+        type: "single",
+        options: [
+          { code: "people", label: "В общении с людьми" },
+          { code: "alone", label: "Наедине" },
+          { code: "depends", label: "Зависит от ситуации" },
+        ],
+      },
+      {
+        key: "teamOrSolo",
+        label: "Вам комфортнее заниматься в команде или самостоятельно?",
+        type: "single",
+        options: [
+          { code: "team", label: "В команде" },
+          { code: "solo", label: "Самостоятельно" },
+          { code: "both", label: "И то, и другое" },
+        ],
+      },
+      {
+        key: "stressReaction",
+        label: "Как вы ведёте себя, когда нужно сдать что-то в срок?",
+        type: "single",
+        options: [
+          { code: "mobilize", label: "Собираюсь и делаю быстрее" },
+          { code: "lost", label: "Теряюсь, мне нужно время" },
+          { code: "own_pace", label: "Делаю в своём темпе, не поддаюсь давлению" },
+        ],
+      },
+      {
+        key: "detailOrBigPicture",
+        label: "Что вам ближе — прорабатывать детали или видеть общую картину?",
+        type: "single",
+        options: [
+          { code: "details", label: "Детали и точность" },
+          { code: "big_picture", label: "Общая картина" },
+          { code: "both", label: "И то, и другое" },
+        ],
+      },
+      {
+        key: "workPace",
+        label: "Какой темп занятий вам комфортен?",
+        type: "single",
+        options: [
+          { code: "fast", label: "Быстрый, динамичный" },
+          { code: "measured", label: "Размеренный, спокойный" },
+          { code: "flexible", label: "Гибкий, меняющийся" },
+        ],
+      },
+      {
+        key: "decisionStyle",
+        label: "Как вы чаще принимаете решения — сердцем или головой?",
+        type: "single",
+        options: [
+          { code: "heart", label: "Сердцем, по ощущениям" },
+          { code: "head", label: "Головой, логически" },
+          { code: "both", label: "И так, и так" },
+        ],
+      },
+      {
+        key: "noveltyOrPerfection",
+        label: "Вам интереснее придумывать новое или доводить до идеала уже готовое?",
+        type: "single",
+        options: [
+          { code: "novelty", label: "Придумывать новое" },
+          { code: "perfection", label: "Доводить до идеала" },
+          { code: "both", label: "И то, и другое" },
+        ],
+      },
+      {
+        key: "leaderOrTeam",
+        label: "Что вам ближе: быть лидером, быть в команде или работать одному?",
+        type: "single",
+        options: [
+          { code: "leader", label: "Быть лидером" },
+          { code: "team", label: "Быть в команде" },
+          { code: "solo", label: "Работать одному" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "teen-interests",
+    title: "Интересы и эмпатия",
+    questions: [
+      {
+        key: "interests",
+        label: "Какие сферы вам интересны?",
+        hint: "Выберите один или несколько вариантов",
+        type: "multi",
+        options: INTERESTS_COMMON,
+      },
+      {
+        key: "thinkingStyle",
+        label: "Что вам больше нравится делать?",
+        hint: "Выберите 1–2 варианта",
+        type: "multi",
+        options: THINKING_STYLES,
+      },
+      {
+        key: "empathyFriendReaction",
+        label: "Когда ваш друг расстроен, вы обычно...",
+        type: "single",
+        options: [
+          { code: "comfort", label: "Успокаиваете и поддерживаете" },
+          { code: "advice", label: "Даёте совет, как решить проблему" },
+          { code: "space", label: "Оставляете его в покое" },
+        ],
+      },
+      {
+        key: "empathyImportance",
+        label: "Насколько вам важно, что чувствуют другие люди?",
+        hint: "1 — совсем не важно, 5 — очень важно",
+        type: "single",
+        options: scaleOptions(),
+      },
+      {
+        key: "empathyNotice",
+        label: "Вы легко замечаете, когда человеку плохо, даже если он не говорит об этом?",
+        type: "single",
+        options: [
+          { code: "yes", label: "Да, почти всегда" },
+          { code: "sometimes", label: "Иногда" },
+          { code: "rarely", label: "Редко" },
+        ],
+      },
+      {
+        key: "empathyHelpOrTech",
+        label: "Что вам ближе: помогать людям или решать технические задачи?",
+        type: "single",
+        options: [
+          { code: "help", label: "Помогать людям" },
+          { code: "tech", label: "Решать технические задачи" },
+          { code: "both", label: "И то, и другое" },
+        ],
+      },
+      {
+        key: "empathyHelpReaction",
+        label: "Как вы реагируете, когда видите, что кому-то нужна помощь?",
+        type: "single",
+        options: [
+          { code: "help_immediately", label: "Сразу предлагаю помощь" },
+          { code: "help_if_asked", label: "Помогаю, если попросят" },
+          { code: "not_notice", label: "Часто не замечаю" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "teen-education",
+    title: "Образование и специальности",
+    questions: [
+      {
+        key: "attractiveProfessions",
+        label: "Какие профессии вам кажутся привлекательными?",
+        hint: "Выберите один или несколько вариантов",
+        type: "multi",
+        options: ATTRACTIVE_PROFESSIONS,
+      },
+      {
+        key: "specializationAreas",
+        label: "Какие направления специальностей вам интересны?",
+        hint: "Выберите один или несколько вариантов",
+        type: "multi",
+        options: SPECIALIZATION_AREAS,
+      },
+      {
+        key: "dreamProfession",
+        label: "Есть ли профессия, о которой вы мечтаете?",
+        type: "text",
+        optional: true,
+      },
+      {
+        key: "educationType",
+        label: "Какое образование вам ближе: вуз (высшее) или колледж/техникум (среднеспециальное)?",
+        type: "single",
+        options: [
+          { code: "university", label: "Вуз (высшее)" },
+          { code: "college", label: "Колледж / техникум (среднеспециальное)" },
+          { code: "not_sure", label: "Пока не знаю" },
+        ],
+      },
+      {
+        key: "educationSpeed",
+        label: "Что для вас важнее: быстрее начать работать или получить фундаментальное образование?",
+        type: "single",
+        options: [
+          { code: "fast", label: "Быстрее начать работать" },
+          { code: "fundamental", label: "Фундаментальное образование" },
+          { code: "not_sure", label: "Пока не знаю" },
+        ],
+      },
+      {
+        key: "examReadiness",
+        label: "Готовы ли вы к ЕГЭ/ОГЭ и длительной учёбе в вузе?",
+        type: "single",
+        options: [
+          { code: "yes", label: "Да, готов(а)" },
+          { code: "maybe", label: "Возможно, но это пугает" },
+          { code: "no", label: "Нет, хочу более короткий путь" },
+        ],
+      },
+    ],
+  },
+];
+
 const TEEN_SERIES: QuestionSeries[] = [
   {
     id: "teen-subjects",
     title: "Учёба и уверенность",
+
     questions: [
       {
         key: "favoriteSubjects",
@@ -152,6 +566,26 @@ const TEEN_SERIES: QuestionSeries[] = [
           { key: "creativity", label: "Творчество" },
           { key: "technical", label: "Техника" },
         ],
+      },
+      {
+        key: "extracurricularActivities",
+        label:
+          "Участвовали ли вы в спортивных секциях, военно-патриотических или волонтёрских кружках?",
+        type: "multi",
+        options: [
+          { code: "sport_section", label: "Спортивная секция" },
+          { code: "military_patriotic", label: "Военно-патриотический кружок" },
+          { code: "volunteering", label: "Волонтёрство" },
+          { code: "none", label: "Ничего из перечисленного" },
+        ],
+      },
+      {
+        key: "handsOnAttitude",
+        label:
+          "Как вы относитесь к работе руками (техническое творчество, ремонт, конструирование)?",
+        hint: "1 — совсем не нравится, 5 — очень нравится",
+        type: "single",
+        options: scaleOptions(),
       },
     ],
   },
@@ -251,6 +685,7 @@ const ADULT_SERIES: QuestionSeries[] = [
           { code: "learning", label: "Хочу учиться новому" },
           { code: "relocation", label: "Переезд / смена региона" },
           { code: "no_growth", label: "Нет карьерного роста" },
+          { code: "meaningful_service", label: "Хочу более значимую/социально полезную работу" },
         ],
       },
       {
@@ -272,7 +707,8 @@ const ADULT_SERIES: QuestionSeries[] = [
       },
       {
         key: "certifications",
-        label: "Профильные сертификаты (если есть)",
+        label:
+          "Дополнительное профессиональное образование (например, «сертификат Google Ads», «курс Python со Stepik», «права категории С», «аттестация по охране труда»)",
         type: "text",
         optional: true,
       },
@@ -346,6 +782,16 @@ export const AI_DIALOGUE_POOL: Question[] = [
     label: "Опишите задачу, которая давалась вам легко, когда другим — тяжело.",
     type: "text",
   },
+  {
+    key: "aiDialogue_helped",
+    label: "Расскажите о случае, когда вы помогли кому-то в сложной или срочной ситуации.",
+    type: "text",
+  },
+  {
+    key: "aiDialogue_admire",
+    label: "Кем вы восхищаетесь профессионально и почему?",
+    type: "text",
+  },
 ];
 
 const AI_DIALOGUE_SERIES: QuestionSeries = {
@@ -355,9 +801,12 @@ const AI_DIALOGUE_SERIES: QuestionSeries = {
 };
 
 export function getBaseSeries(category: Category): QuestionSeries[] {
-  const branchSeries = category === "teen" ? TEEN_SERIES : ADULT_SERIES;
-  return [...COMMON_SERIES, ...branchSeries, AI_DIALOGUE_SERIES];
+  if (category === "teen") {
+    return [...TEEN_COMMON_SERIES, ...TEEN_SERIES, AI_DIALOGUE_SERIES];
+  }
+  return [...COMMON_SERIES, ...ADULT_SERIES, AI_DIALOGUE_SERIES];
 }
+
 
 export function getRelocationSeries(): QuestionSeries {
   return RELOCATION_SERIES;

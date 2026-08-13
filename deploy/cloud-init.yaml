@@ -1,0 +1,108 @@
+#cloud-config
+# ПрофНавигатор AI — cloud-init скрипт первоначальной настройки сервера (Timeweb VDS)
+# ОС: Ubuntu 22.04 LTS / 24.04 LTS
+# Загрузите этот файл в Timeweb в поле «Скрипт инициализации».
+# Скрипт идемпотентный — безопасно запускать повторно.
+# Не содержит секретов (пароли БД, ключи API) — они задаются отдельно в .env.local.
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - curl
+  - wget
+  - unzip
+  - build-essential
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - ufw
+  - nginx
+  - postgresql
+  - postgresql-contrib
+
+write_files:
+  # systemd-сервис MinIO
+  - path: /etc/systemd/system/minio.service
+    content: |
+      [Unit]
+      Description=MinIO
+      Documentation=https://docs.min.io
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=minio-user
+      Group=minio-user
+      EnvironmentFile=-/etc/default/minio
+      ExecStart=/usr/local/bin/minio server /mnt/data --console-address ":9001"
+      Restart=always
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # Конфигурация MinIO по умолчанию (смените пароли после первого запуска)
+  - path: /etc/default/minio
+    content: |
+      MINIO_ROOT_USER=minioadmin
+      MINIO_ROOT_PASSWORD=minioadmin
+      MINIO_VOLUMES="/mnt/data"
+
+  # Скрипт ежедневного бэкапа БД
+  - path: /usr/local/bin/backup-db.sh
+    content: |
+      #!/usr/bin/env bash
+      # Ежедневный бэкап базы данных ПрофНавигатор AI
+      # Замените DB_NAME и DB_USER на реальные значения из .env.local
+      DB_NAME="profnavigator"
+      DB_USER="profnavigator"
+      BACKUP_DIR="/var/backups/profnavigator"
+      DATE=$(date +%Y%m%d_%H%M%S)
+      pg_dump -U "$DB_USER" "$DB_NAME" | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+      # Храним последние 14 бэкапов
+      ls -t "$BACKUP_DIR"/db_*.sql.gz | tail -n +15 | xargs -r rm --
+    permissions: '0755'
+
+runcmd:
+  # --- Node.js 20 (нужен для Next.js 16) ---
+  - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  - apt-get install -y nodejs
+
+  # --- PM2 ---
+  - npm install -g pm2
+  - pm2 startup systemd -u root --hp /root || true
+
+  # --- MinIO ---
+  - wget -q https://dl.min.io/server/minio/release/linux-amd64/minio -O /usr/local/bin/minio
+  - chmod +x /usr/local/bin/minio
+  - useradd -r minio-user -s /sbin/nologin || true
+  - mkdir -p /mnt/data
+  - chown -R minio-user:minio-user /mnt/data
+  - systemctl daemon-reload
+  - systemctl enable minio
+  - systemctl start minio
+
+  # --- PostgreSQL: включить и запустить ---
+  - systemctl enable postgresql
+  - systemctl start postgresql
+
+  # --- Nginx: включить и запустить ---
+  - systemctl enable nginx
+  - systemctl start nginx
+
+  # --- Файрвол UFW (порты 22, 80, 443) ---
+  - ufw allow OpenSSH
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable
+
+  # --- Папка проекта ---
+  - mkdir -p /var/www/profnavigator
+
+  # --- Бэкап БД: папка и cron (ежедневно в 03:00) ---
+  - mkdir -p /var/backups/profnavigator
+  - (crontab -l 2>/dev/null; echo "0 3 * * * /usr/local/bin/backup-db.sh") | crontab -
+
+final_message: "ПрофНавигатор AI: первоначальная настройка завершена. Установлены Node.js, PM2, PostgreSQL, MinIO, Nginx, UFW. Папка проекта: /var/www/profnavigator. MinIO: API :9000, консоль :9001 (minioadmin/minioadmin)."

@@ -1,6 +1,17 @@
 import Image from "next/image";
 import { CategoryCard } from "@/components/CategoryCard";
 import { StartAnalysisButton } from "@/components/StartAnalysisButton";
+import { Footer } from "@/components/Footer";
+import { AdultIcon, TeenIcon } from "@/components/icons";
+import { HeroIllustration } from "@/components/home/HeroIllustration";
+import { HowItWorks } from "@/components/home/HowItWorks";
+import { KeyAdvantages } from "@/components/home/KeyAdvantages";
+import { ReportPreview } from "@/components/home/ReportPreview";
+
+import { TrustSection } from "@/components/home/TrustSection";
+import { PrivacyNotice } from "@/components/home/PrivacyNotice";
+import { Faq } from "@/components/home/Faq";
+import { SpheresShowcase } from "@/components/home/SpheresShowcase";
 
 export default function Home() {
   return (
@@ -22,6 +33,20 @@ export default function Home() {
         лет с учетом ваших способностей, опыта, региона проживания и рынка
         труда.
       </p>
+      <p className="mt-2 max-w-xl text-lg text-slate-500">
+        Анализирует рынок труда из открытых источников по доходности и
+        перспективам.
+      </p>
+
+
+      <HeroIllustration />
+
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <a href="/register" className="rounded-full border border-brand px-5 py-3 text-sm font-medium text-brand">Регистрация</a>
+        <a href="/login" className="rounded-full bg-brand px-5 py-3 text-sm font-medium text-white">Войти в аккаунт</a>
+        <a href="/account" className="rounded-full border border-brand px-5 py-3 text-sm font-medium text-brand">Личный кабинет</a>
+      </div>
+
 
       <StartAnalysisButton />
 
@@ -33,13 +58,25 @@ export default function Home() {
           href="/survey/teen"
           title="Для подростков 13–17 лет"
           description="Определим склонности, интересные предметы и направления обучения."
+          icon={TeenIcon}
         />
         <CategoryCard
           href="/survey/adult"
           title="Для взрослых"
           description="Учтём опыт, навыки и причины смены профессии, подберём плавный переход."
+          icon={AdultIcon}
         />
       </div>
+
+      <HowItWorks />
+      <KeyAdvantages />
+      <ReportPreview />
+
+      <TrustSection />
+      <PrivacyNotice />
+      <Faq />
+      <SpheresShowcase />
+      <Footer />
     </main>
   );
 }

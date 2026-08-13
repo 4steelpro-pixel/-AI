@@ -35,7 +35,7 @@ async function completeChat(messages: YandexGptMessage[]): Promise<string> {
     },
     body: JSON.stringify({
       modelUri,
-      completionOptions: { stream: false, temperature: 0.4, maxTokens: 4000 },
+      completionOptions: { stream: false, temperature: 0.4, maxTokens: 8000 },
       messages,
     }),
   });
@@ -59,9 +59,39 @@ async function completeChat(messages: YandexGptMessage[]): Promise<string> {
 
 function extractJson(text: string): unknown {
   const trimmed = text.trim();
+
+  // 1. Пробуем распарсить весь текст как JSON (без markdown-разметки)
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // ignore — пробуем другие варианты
+  }
+
+  // 2. Ищем JSON внутри markdown-блока ```json ... ```
   const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  const jsonText = fencedMatch ? fencedMatch[1] : trimmed;
-  return JSON.parse(jsonText);
+  if (fencedMatch) {
+    try {
+      return JSON.parse(fencedMatch[1].trim());
+    } catch {
+      // ignore — пробуем следующий вариант
+    }
+  }
+
+  // 3. Ищем первый объект JSON в тексте (открывающая { до последней закрывающей })
+  const firstBrace = trimmed.indexOf("{");
+  if (firstBrace !== -1) {
+    const lastBrace = trimmed.lastIndexOf("}");
+    if (lastBrace > firstBrace) {
+      try {
+        return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+      } catch {
+        // ignore — пробуем следующий вариант
+      }
+    }
+  }
+
+  // 4. Если ничего не помогло — выбрасываем исходную ошибку
+  throw new Error(`Не удалось извлечь JSON из ответа YandexGPT: ${trimmed.slice(0, 200)}`);
 }
 
 export async function requestCareerAnalysis(

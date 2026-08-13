@@ -38,6 +38,7 @@ export function StartAnalysisButton() {
             Для взрослых
           </Link>
         </div>
+
         <button
           type="button"
           onClick={() => setOpen(false)}
