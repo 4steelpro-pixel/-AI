@@ -58,6 +58,8 @@ export function SurveyFlow({ category }: { category: Category }) {
   const [exporting, setExporting] = useState<"pdf" | "docx" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [accessChecked, setAccessChecked] = useState(false);
+  const [consent, setConsent] = useState(false);
+
 
   useEffect(() => {
     trackEvent("survey_started", sessionId, { category });
@@ -153,9 +155,14 @@ export function SurveyFlow({ category }: { category: Category }) {
   }
 
   async function handleSubmit() {
+    if (!consent) {
+      setSubmitError("Необходимо согласие на обработку персональных данных");
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     trackEvent("survey_submitted", sessionId, { category });
+
     const payload = buildAnalysisPayload(category, sessionId, answers);
     try {
       const res = await fetch("/api/analyze", {
@@ -283,6 +290,42 @@ export function SurveyFlow({ category }: { category: Category }) {
             </p>
           ) : null}
 
+          <label className="flex items-start gap-2 rounded-xl border border-brand-surface bg-brand-surface/40 p-4 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
+            <span>
+              {category === "teen" ? (
+                <>
+                  Я подтверждаю, что мне исполнилось 14 лет, и я даю согласие на обработку
+                  персональных данных в соответствии с{" "}
+                  <a href="/consent" target="_blank" className="text-brand underline">
+                    согласием на обработку персональных данных
+                  </a>{" "}
+                  и{" "}
+                  <a href="/privacy" target="_blank" className="text-brand underline">
+                    политикой конфиденциальности
+                  </a>
+                  . Если мне меньше 14 лет — согласие даёт мой законный представитель.
+                </>
+              ) : (
+                <>
+                  Я даю согласие на обработку персональных данных в соответствии с{" "}
+                  <a href="/consent" target="_blank" className="text-brand underline">
+                    согласием на обработку персональных данных
+                  </a>{" "}
+                  и{" "}
+                  <a href="/privacy" target="_blank" className="text-brand underline">
+                    политикой конфиденциальности
+                  </a>
+                </>
+              )}
+            </span>
+          </label>
+
           <div className="flex justify-between">
             <button
               type="button"
@@ -300,6 +343,7 @@ export function SurveyFlow({ category }: { category: Category }) {
               {submitting ? "Отправка..." : "Получить отчёт"}
             </button>
           </div>
+
         </div>
       ) : null}
 

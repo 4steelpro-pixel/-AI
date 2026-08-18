@@ -6,10 +6,15 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [consent, setConsent] = useState(false);
   const [message, setMessage] = useState("");
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!consent) {
+      setMessage("Необходимо согласие на обработку персональных данных");
+      return;
+    }
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,6 +40,24 @@ export default function RegisterPage() {
         <input value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-2" />
         <label className="mt-4 block text-sm">Пароль</label>
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-2" />
+        <label className="mt-4 flex items-start gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0"
+          />
+          <span>
+            Я согласен на обработку персональных данных в соответствии с{" "}
+            <a href="/consent" target="_blank" className="text-emerald-700 underline">
+              согласием на обработку персональных данных
+            </a>{" "}
+            и{" "}
+            <a href="/privacy" target="_blank" className="text-emerald-700 underline">
+              политикой конфиденциальности
+            </a>
+          </span>
+        </label>
         <button className="mt-6 w-full rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white" type="submit">Создать аккаунт</button>
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
         <p className="mt-4 text-sm text-slate-500">Есть аккаунт? <a className="text-emerald-700 underline" href="/login">Войти</a></p>

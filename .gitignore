@@ -54,3 +54,7 @@ start.bat
 *.pptx
 /-AI/
 /public/example-report.pdf
+
+# защита проекта (не часть кодовой базы)
+Речь_защита_ПрофНавигатор_AI.md
+

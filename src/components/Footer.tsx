@@ -9,10 +9,15 @@ export function Footer() {
           <Link href="/privacy" className="hover:text-brand">
             Политика конфиденциальности
           </Link>
-          <a href="mailto:support@profnavigator.ai" className="hover:text-brand">
-            support@profnavigator.ai
+          <Link href="/consent" className="hover:text-brand">
+            Согласие на обработку персональных данных
+          </Link>
+          <a href="mailto:info@profnaviai.ru" className="hover:text-brand">
+            info@profnaviai.ru
           </a>
+
         </div>
+
         <p>© {new Date().getFullYear()} ПрофНавигатор AI</p>
       </div>
     </footer>
