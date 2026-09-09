@@ -16,11 +16,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, allowed: true, requirePayment: false });
   }
 
-  // Оплата требуется — нужен валидный токен и успешный платёж
+  // Оплата требуется. Гость также может перейти на страницу оплаты:
+  // регистрация не должна быть обязательным промежуточным шагом.
   const authHeader = request.headers.get("authorization") || "";
   const token = authHeader.replace("Bearer ", "").trim();
   if (!token) {
-    return NextResponse.json({ ok: false, error: "Токен отсутствует" }, { status: 401 });
+    return NextResponse.json({ ok: true, allowed: false, requirePayment: true });
   }
 
   try {

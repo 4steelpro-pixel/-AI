@@ -53,17 +53,16 @@ function BillingContent() {
 
   async function handlePay() {
     const token = localStorage.getItem("authToken");
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
 
     setLoading(true);
     setError("");
     setMessage("");
     const response = await fetch("/api/billing/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         amountCents: finalPrice,
         provider: "yoomoney",
@@ -85,6 +84,15 @@ function BillingContent() {
       <div className="rounded-3xl border bg-white p-8 shadow-sm">
         <h1 className="text-3xl font-semibold">Оплата доступа к тесту</h1>
         <p className="mt-3 text-slate-600">Для прохождения опроса требуется доступ. Мы предлагаем оплату через российский сервис YooMoney / ЮKassa.</p>
+
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
+          <div className="font-semibold text-slate-800">Реквизиты получателя</div>
+          <dl className="mt-3 grid gap-1 sm:grid-cols-[auto_1fr] sm:gap-x-4">
+            <dt>Получатель</dt><dd>ИП Аношин Илья Александрович</dd>
+            <dt>ОГРН</dt><dd>311645333900022</dd>
+            <dt>ИНН</dt><dd>645393837753</dd>
+          </dl>
+        </div>
 
         <div className="mt-6 rounded-2xl bg-emerald-50 p-5 text-sm text-emerald-800">
           <div className="font-semibold">Стоимость доступа</div>

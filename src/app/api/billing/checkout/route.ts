@@ -7,13 +7,10 @@ import { getSettings, validatePromoCode, incrementPromoUsage } from "@/lib/billi
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization") || "";
   const token = authHeader.replace("Bearer ", "").trim();
-  if (!token) {
-    return NextResponse.json({ ok: false, error: "Токен отсутствует" }, { status: 401 });
-  }
 
   try {
-    const decoded = verifyJwt(token);
     const body = await request.json();
+    const decoded = token ? verifyJwt(token) : null;
     const provider = String(body?.provider || getRecommendedProvider());
     const promoCode = body?.promoCode ? String(body.promoCode).trim() : "";
 
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
        values ($1, $2, $3, 'RUB', 'pending', $4)
        returning id, provider, amount_cents, currency, status`,
       [
-        decoded.sub,
+        decoded?.sub ?? null,
         provider,
         amountCents,
         {
