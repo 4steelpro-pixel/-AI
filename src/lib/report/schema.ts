@@ -35,8 +35,8 @@ export const reportSchema = z.object({
   keyStrengths: z.array(z.string()),
   possibleLimitations: z.array(z.string()),
   psychologicalProfile: z.string(),
-  psychotype: z.string().optional(),
-  empathyLevel: z.enum(["низкий", "средний", "высокий"]).optional(),
+  psychotype: z.string().nullish(),
+  empathyLevel: z.enum(["низкий", "средний", "высокий"]).nullish(),
   topProfessions: z.array(professionSchema).min(1),
   alternativeProfessions: z.array(
     z.object({ title: z.string(), shortReason: z.string() }),
@@ -46,7 +46,7 @@ export const reportSchema = z.object({
     reason: z.string(),
     professions: z.array(z.string()),
   }),
-  educationRecommendations: z.array(educationRecommendationSchema).optional(),
+  educationRecommendations: z.array(educationRecommendationSchema).nullish(),
   transitionPlan: z.object({
     month1: z.string(),
     month2: z.string(),

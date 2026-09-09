@@ -170,11 +170,24 @@ export function SurveyFlow({ category }: { category: Category }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const rawText = await res.text();
+      let data: { error?: string; report?: CareerReport };
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(
+          res.ok
+            ? "Сервер вернул некорректный ответ. Попробуйте ещё раз."
+            : `Сервер недоступен (${res.status}). Попробуйте ещё раз.`,
+        );
+      }
       if (!res.ok) {
         throw new Error(data.error ?? `status ${res.status}`);
       }
-      setReport(data.report as CareerReport);
+      if (!data.report) {
+        throw new Error("Сервер не вернул отчёт. Попробуйте ещё раз.");
+      }
+      setReport(data.report);
       setPhase("report");
       trackEvent("survey_completed", sessionId, { category });
     } catch (error) {
@@ -199,11 +212,25 @@ export function SurveyFlow({ category }: { category: Category }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, format, report }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error ?? `status ${res.status}`);
+        let message = `status ${res.status}`;
+        try {
+          const data = await res.json();
+          message = data.error ?? message;
+        } catch {
+          // не-JSON ответ — используем общее сообщение
+        }
+        throw new Error(message);
       }
-      window.open(data.url, "_blank");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `profnavigator-report.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
       trackEvent("report_exported", sessionId, { format });
     } catch (error) {
       const message =

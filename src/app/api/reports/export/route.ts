@@ -48,25 +48,26 @@ export async function POST(request: Request) {
 
   const objectKey = `reports/${sessionId}/report.${format}`;
 
-  let url: string;
+  // Копию кладём в MinIO для истории, но файл отдаём клиенту напрямую,
+  // чтобы скачивание не зависело от публичной доступности хранилища.
   try {
-    url = await uploadReportFile(objectKey, buffer, contentType);
+    await uploadReportFile(objectKey, buffer, contentType);
+    try {
+      await updateReportObjectKey(sessionId, format, objectKey);
+    } catch (error) {
+      console.error("Не удалось обновить ссылку на файл в БД:", error);
+    }
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          "Не удалось загрузить файл в Object Storage. Проверьте STORAGE_* переменные окружения.",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 502 },
-    );
+    console.error("Не удалось сохранить файл в MinIO:", error);
   }
 
-  try {
-    await updateReportObjectKey(sessionId, format, objectKey);
-  } catch (error) {
-    console.error("Не удалось обновить ссылку на файл в БД:", error);
-  }
-
-  return NextResponse.json({ url });
+  return new NextResponse(new Uint8Array(buffer), {
+    status: 200,
+    headers: {
+      "Content-Type": contentType,
+      "Content-Disposition": `attachment; filename="profnavigator-report.${format}"`,
+      "Content-Length": String(buffer.length),
+      "Cache-Control": "private, no-store",
+    },
+  });
 }
