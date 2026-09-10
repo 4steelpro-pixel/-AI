@@ -4,8 +4,23 @@ import { reportSchema } from "@/lib/report/schema";
 import { requestCareerAnalysis } from "@/lib/report/yandexgpt";
 import { saveReport } from "@/lib/report/storage";
 import { logEvent } from "@/lib/analytics/events";
+import { checkTestAccess } from "@/lib/billing/access";
 
 export async function POST(request: Request) {
+  // Проверяем доступ к тесту до обращения к YandexGPT.
+  // При включённой оплате отчёт формируется только для пользователей
+  // с подтверждённым платежом — это исключает обход оплаты через прямой запрос к API.
+  const access = await checkTestAccess(request);
+  if (!access.allowed) {
+    return NextResponse.json(
+      {
+        error: "Для получения отчёта необходима оплата доступа.",
+        requirePayment: access.requirePayment,
+      },
+      { status: 402 },
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsedRequest = analysisRequestSchema.safeParse(body);
 
@@ -49,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await saveReport(parsedRequest.data, parsedReport.data);
+    await saveReport(parsedRequest.data, parsedReport.data, access.userId);
   } catch (error) {
     console.error("Не удалось сохранить отчёт в БД:", error);
   }

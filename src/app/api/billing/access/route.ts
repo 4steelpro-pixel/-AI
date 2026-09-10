@@ -1,46 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPool } from "@/lib/db/client";
-import { verifyJwt } from "@/lib/auth/utils";
-import { getSettings } from "@/lib/billing/settings";
+import { checkTestAccess } from "@/lib/billing/access";
 
 /**
  * Проверяет, имеет ли пользователь доступ к прохождению теста.
  * Если настройка require_payment выключена — доступ открыт всем.
  * Если включена — доступ только после успешной оплаты.
+ *
+ * Гость (без токена) получает allowed: false, requirePayment: true —
+ * это позволяет перенаправить его на страницу оплаты без обязательной регистрации.
  */
 export async function GET(request: NextRequest) {
-  const settings = await getSettings();
-
-  // Оплата не требуется — доступ открыт всем, токен не нужен
-  if (!settings.require_payment) {
-    return NextResponse.json({ ok: true, allowed: true, requirePayment: false });
-  }
-
-  // Оплата требуется. Гость также может перейти на страницу оплаты:
-  // регистрация не должна быть обязательным промежуточным шагом.
-  const authHeader = request.headers.get("authorization") || "";
-  const token = authHeader.replace("Bearer ", "").trim();
-  if (!token) {
-    return NextResponse.json({ ok: true, allowed: false, requirePayment: true });
-  }
-
   try {
-    const decoded = verifyJwt(token);
-
-    // Проверяем наличие успешного платежа у пользователя
-    const pool = getPool();
-    const { rows } = await pool.query(
-      `select id from payments where user_id = $1 and status = 'succeeded' limit 1`,
-      [decoded.sub],
-    );
-
+    const access = await checkTestAccess(request);
     return NextResponse.json({
       ok: true,
-      allowed: rows.length > 0,
-      requirePayment: true,
+      allowed: access.allowed,
+      requirePayment: access.requirePayment,
     });
   } catch {
-    return NextResponse.json({ ok: false, error: "Неверный токен" }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "Ошибка проверки доступа" }, { status: 500 });
   }
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 function BillingContent() {
@@ -72,8 +73,16 @@ function BillingContent() {
     const data = await response.json();
     setLoading(false);
     if (data.ok) {
-      setMessage(`Оплата создана. После подтверждения вы сможете перейти к тесту по категории ${category}.`);
-      window.location.href = `/survey/${category}`;
+      // Если оплата уже подтверждена — можно сразу переходить к тесту.
+      // Иначе остаёмся на странице: редирект на тест без подтверждённой оплаты
+      // приводил бы к бесконечному циклу «тест → оплата → тест».
+      if (data.payment?.status === "succeeded") {
+        window.location.replace(`/survey/${category}`);
+        return;
+      }
+      setMessage(
+        "Заявка на оплату создана. После подтверждения платежа доступ к тесту откроется автоматически.",
+      );
     } else {
       setError(data.error || "Ошибка оплаты");
     }
@@ -81,6 +90,9 @@ function BillingContent() {
 
   return (
     <main className="mx-auto max-w-3xl p-8">
+      <Link href="/" className="mb-4 inline-block text-sm text-slate-400 hover:text-emerald-700">
+        ← На главную
+      </Link>
       <div className="rounded-3xl border bg-white p-8 shadow-sm">
         <h1 className="text-3xl font-semibold">Оплата доступа к тесту</h1>
         <p className="mt-3 text-slate-600">Для прохождения опроса требуется доступ. Мы предлагаем оплату через российский сервис YooMoney / ЮKassa.</p>
@@ -146,9 +158,23 @@ function BillingContent() {
         {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
         {message ? <p className="mt-4 text-sm text-slate-600">{message}</p> : null}
 
-        <button onClick={handlePay} disabled={loading} className="mt-6 rounded-xl bg-emerald-600 px-5 py-3 font-medium text-white disabled:opacity-70">
-          {loading ? "Подождите..." : "Оплатить и продолжить"}
-        </button>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button onClick={handlePay} disabled={loading} className="rounded-xl bg-emerald-600 px-5 py-3 font-medium text-white disabled:opacity-70">
+            {loading ? "Подождите..." : "Оплатить и продолжить"}
+          </button>
+          <Link
+            href="/"
+            className="rounded-xl border border-slate-300 px-5 py-3 font-medium text-slate-600 hover:bg-slate-50"
+          >
+            На главную
+          </Link>
+          <Link
+            href="/account"
+            className="rounded-xl border border-slate-300 px-5 py-3 font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Личный кабинет
+          </Link>
+        </div>
       </div>
     </main>
   );

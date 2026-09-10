@@ -73,9 +73,15 @@ function flattenAnswers(request: AnalysisRequest): AnswerRow[] {
   return rows;
 }
 
+const CATEGORY_TITLE: Record<string, string> = {
+  teen: "Профориентация для подростков 13–17 лет",
+  adult: "Профориентация для взрослых",
+};
+
 export async function saveReport(
   request: AnalysisRequest,
   report: CareerReport,
+  userId?: string | null,
 ): Promise<void> {
   if (!process.env.DATABASE_URL) {
     return;
@@ -106,9 +112,20 @@ export async function saveReport(
       );
     }
 
+    const title =
+      CATEGORY_TITLE[request.meta.category] ??
+      `Профориентационный отчёт (${request.meta.category})`;
+
     await client.query(
-      "insert into reports (session_id, raw_llm_response) values ($1, $2)",
-      [request.meta.sessionId, JSON.stringify(report)],
+      `insert into reports (session_id, user_id, title, category, status, raw_llm_response)
+       values ($1, $2, $3, $4, 'completed', $5)`,
+      [
+        request.meta.sessionId,
+        userId ?? null,
+        title,
+        request.meta.category,
+        JSON.stringify(report),
+      ],
     );
 
     await client.query("commit");

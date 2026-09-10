@@ -65,35 +65,51 @@ export function SurveyFlow({ category }: { category: Category }) {
     trackEvent("survey_started", sessionId, { category });
   }, [sessionId, category]);
 
-  // Проверяем доступ к тесту (если оплата обязательна — только после оплаты)
+  // Проверяем доступ к тесту (если оплата обязательна — только после оплаты).
+  // Проверка выполняется ДО отображения вопросов, чтобы тест нельзя было
+  // увидеть и пройти без оплаты (в т.ч. вернувшись кнопкой «Назад»).
   useEffect(() => {
+    let cancelled = false;
     const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+
     fetch("/api/billing/access", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((res) => res.json())
       .then((data) => {
+        if (cancelled) return;
         // Доступ открыт (в т.ч. когда оплата не требуется — токен не нужен)
         if (data.ok && data.allowed) {
           setAccessChecked(true);
           return;
         }
-        // Оплата требуется, но доступа нет — на страницу оплаты
+        // Доступа нет — уводим со страницы теста, ЗАМЕНЯЯ запись в истории,
+        // чтобы кнопка «Назад» не вернула пользователя на тест без оплаты.
         if (data.requirePayment) {
-          window.location.href = `/billing?category=${category}`;
+          window.location.replace(`/billing?category=${category}`);
           return;
         }
-        // Оплата не требуется, но нужна авторизация
-        if (!token) {
-          window.location.href = "/login";
-          return;
-        }
-        window.location.href = `/billing?category=${category}`;
+        window.location.replace(token ? `/billing?category=${category}` : "/login");
       })
       .catch(() => {
-        window.location.href = `/billing?category=${category}`;
+        if (!cancelled) window.location.replace(`/billing?category=${category}`);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [category]);
+
+  // При возврате на страницу из кэша браузера (back-forward cache)
+  // перезагружаем её, чтобы доступ был проверен заново и тест нельзя было
+  // показать без действующей оплаты.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
 
   const currentSeries = series[currentIndex];
@@ -164,10 +180,14 @@ export function SurveyFlow({ category }: { category: Category }) {
     trackEvent("survey_submitted", sessionId, { category });
 
     const payload = buildAnalysisPayload(category, sessionId, answers);
+    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
       const rawText = await res.text();
@@ -180,6 +200,11 @@ export function SurveyFlow({ category }: { category: Category }) {
             ? "Сервер вернул некорректный ответ. Попробуйте ещё раз."
             : `Сервер недоступен (${res.status}). Попробуйте ещё раз.`,
         );
+      }
+      if (res.status === 402) {
+        // Сервер подтвердил, что доступ к тесту не оплачен — уводим на оплату.
+        window.location.replace(`/billing?category=${category}`);
+        return;
       }
       if (!res.ok) {
         throw new Error(data.error ?? `status ${res.status}`);
@@ -242,6 +267,18 @@ export function SurveyFlow({ category }: { category: Category }) {
     } finally {
       setExporting(null);
     }
+  }
+
+  // Пока доступ не подтверждён — не показываем вопросы теста.
+  // Это ключевая защита от обхода оплаты: даже если пользователь вернётся
+  // на страницу кнопкой «Назад», тест не отобразится до проверки доступа.
+  if (!accessChecked) {
+    return (
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-surface border-t-brand" />
+        <p className="text-slate-500">Проверяем доступ к тесту…</p>
+      </main>
+    );
   }
 
   return (
