@@ -82,6 +82,7 @@ export async function saveReport(
   request: AnalysisRequest,
   report: CareerReport,
   userId?: string | null,
+  customerEmail?: string | null,
 ): Promise<void> {
   if (!process.env.DATABASE_URL) {
     return;
@@ -117,14 +118,15 @@ export async function saveReport(
       `Профориентационный отчёт (${request.meta.category})`;
 
     await client.query(
-      `insert into reports (session_id, user_id, title, category, status, raw_llm_response)
-       values ($1, $2, $3, $4, 'completed', $5)`,
+      `insert into reports (session_id, user_id, title, category, status, raw_llm_response, customer_email)
+       values ($1, $2, $3, $4, 'completed', $5, $6)`,
       [
         request.meta.sessionId,
         userId ?? null,
         title,
         request.meta.category,
         JSON.stringify(report),
+        customerEmail ?? null,
       ],
     );
 

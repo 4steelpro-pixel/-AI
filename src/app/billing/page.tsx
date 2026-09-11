@@ -14,6 +14,7 @@ function BillingContent() {
   const [promoCode, setPromoCode] = useState("");
   const [promoStatus, setPromoStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [email, setEmail] = useState("");
 
   // Загружаем актуальную цену из настроек
   useEffect(() => {
@@ -23,6 +24,35 @@ function BillingContent() {
         if (data.ok && data.priceCents) setPriceCents(data.priceCents);
       })
       .catch(() => {});
+  }, []);
+
+  // Подставляем email: сохранённый ранее или из профиля
+  useEffect(() => {
+    let cancelled = false;
+
+    const timer = setTimeout(() => {
+      try {
+        const saved = localStorage.getItem("pn_access_email");
+        if (saved && !cancelled) setEmail(saved);
+      } catch {
+        // localStorage может быть недоступен — не критично
+      }
+    }, 0);
+
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled && data?.ok && data.user?.email) setEmail(data.user.email);
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, []);
 
   async function handleApplyPromo() {
@@ -53,38 +83,63 @@ function BillingContent() {
   const finalPrice = Math.round((priceCents * (100 - discountPercent)) / 100);
 
   async function handlePay() {
+    const trimmedEmail = email.trim();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Укажите корректный email — на него будет открыт доступ к тесту.");
+      return;
+    }
+
     const token = localStorage.getItem("authToken");
 
     setLoading(true);
     setError("");
     setMessage("");
-    const response = await fetch("/api/billing/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        amountCents: finalPrice,
-        provider: "yoomoney",
-        promoCode: promoStatus === "valid" ? promoCode : "",
-      }),
-    });
-    const data = await response.json();
-    setLoading(false);
-    if (data.ok) {
-      // Если оплата уже подтверждена — можно сразу переходить к тесту.
-      // Иначе остаёмся на странице: редирект на тест без подтверждённой оплаты
-      // приводил бы к бесконечному циклу «тест → оплата → тест».
-      if (data.payment?.status === "succeeded") {
+
+    try {
+      const response = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          category,
+          provider: "yoomoney",
+          promoCode: promoStatus === "valid" ? promoCode : "",
+        }),
+      });
+      const data = await response.json();
+      setLoading(false);
+
+      if (!data.ok) {
+        setError(data.error || "Ошибка оплаты");
+        return;
+      }
+
+      // Запоминаем email, чтобы доступ к тесту работал и без регистрации
+      try {
+        localStorage.setItem("pn_access_email", trimmedEmail);
+      } catch {
+        // localStorage может быть недоступен — не критично
+      }
+
+      if (data.confirmationUrl) {
+        // Переходим на платёжную форму ЮKassa
+        window.location.href = data.confirmationUrl;
+        return;
+      }
+
+      if (data.status === "succeeded") {
         window.location.replace(`/survey/${category}`);
         return;
       }
-      setMessage(
-        "Заявка на оплату создана. После подтверждения платежа доступ к тесту откроется автоматически.",
-      );
-    } else {
-      setError(data.error || "Ошибка оплаты");
+
+      setMessage("Платёж создан. Подтвердите оплату, чтобы открыть доступ к тесту.");
+    } catch {
+      setLoading(false);
+      setError("Не удалось создать платёж. Попробуйте позже.");
     }
   }
 
@@ -122,6 +177,24 @@ function BillingContent() {
             <div className="mt-1 font-medium text-emerald-700">Скидка {discountPercent}% по промо-коду</div>
           ) : null}
           <div className="mt-2">Поддерживаются русские карты и банковские платежи.</div>
+        </div>
+
+        <div className="mt-6">
+          <label className="text-sm font-medium text-slate-700">Email для доступа к тесту</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError("");
+            }}
+            placeholder="you@example.com"
+            autoComplete="email"
+            className="mt-2 w-full rounded-xl border px-4 py-2 text-sm"
+          />
+          <p className="mt-2 text-xs text-slate-500">
+            На этот email будет открыт доступ к тесту после оплаты — регистрация не обязательна.
+          </p>
         </div>
 
         <div className="mt-6">

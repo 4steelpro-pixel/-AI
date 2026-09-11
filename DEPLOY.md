@@ -265,3 +265,94 @@ npm install
 npm run build
 pm2 restart profnavigator
 ```
+
+---
+
+## Приём платежей через ЮKassa
+
+### 1. Переменные окружения
+
+В `/var/www/profnavigator/.env.local` добавьте:
+
+```env
+YOOKASSA_SHOP_ID=1433965
+YOOKASSA_SECRET_KEY=live_ваш_секретный_ключ
+YOOKASSA_SEND_RECEIPT=false
+APP_BASE_URL=https://profnaviai.ru
+```
+
+После изменения `.env.local` пересоберите и перезапустите приложение:
+
+```bash
+cd /var/www/profnavigator
+npm run build && pm2 restart profnavigator
+```
+
+Проверка, что ключи подхватились:
+
+```bash
+cd /var/www/profnavigator
+node -e "require('@next/env').loadEnvConfig(process.cwd()); console.log('shop:', process.env.YOOKASSA_SHOP_ID, '| key length:', (process.env.YOOKASSA_SECRET_KEY||'').length)"
+```
+
+### 2. Вебхуки в личном кабинете ЮKassa
+
+Настройки → **HTTP-уведомления**. Укажите URL:
+
+```
+https://profnaviai.ru/api/billing/webhook
+```
+
+События: `payment.succeeded`, `payment.canceled`.
+
+> Подлинность уведомлений проверяется перезапросом платежа из API ЮKassa,
+> поэтому белый список IP настраивать не обязательно.
+
+### 3. Страховка от пропущенных вебхуков (cron)
+
+```bash
+crontab -e
+```
+
+Добавьте строку — каждые 10 минут (замените расписание на нужное):
+
+```cron
+10 * * * * cd /var/www/profnavigator && /usr/bin/npm run db:sync-payments >> /var/log/pn-sync.log 2>&1
+```
+
+Ручная проверка:
+
+```bash
+cd /var/www/profnavigator && npm run db:sync-payments
+tail -n 50 /var/log/pn-sync.log
+```
+
+### 4. Как выдаётся доступ к тесту
+
+1. Покупатель указывает **email** на странице `/billing` — регистрация не обязательна.
+2. Создаётся локальный платёж и платёж в ЮKassa; покупатель переходит на платёжную форму.
+3. После оплаты ЮKassa возвращает покупателя на `/billing/success?paymentId=...`.
+4. Доступ проверяется по email: без успешного платежа `/api/analyze` вернёт **402**.
+5. Если покупатель позже зарегистрируется с тем же email, отчёты появятся в личном кабинете.
+
+### 5. Тестирование
+
+В ЮKassa используйте **тестовый магазин** и тестовые карты. Сценарии:
+
+- гость оплатил → доступ открылся по email без регистрации;
+- гость оплатил → зарегистрировался с тем же email → доступ и отчёты в кабинете;
+- вебхук не пришёл → `npm run db:sync-payments` подтянул статус;
+- повторный вебхук не создаёт дублей (идемпотентность).
+
+---
+
+## Полезные эндпоинты биллинга
+
+| Метод | Путь | Назначение |
+|---|---|---|
+| GET | `/api/billing/access` | проверка доступа к тесту (по токену или email) |
+| GET | `/api/billing/price` | актуальная цена из настроек |
+| POST | `/api/billing/validate-promo` | проверка промо-кода |
+| POST | `/api/billing/checkout` | создание платежа + платёж в ЮKassa |
+| GET | `/api/billing/status?paymentId=...` | статус платежа для `/billing/success` |
+| POST | `/api/billing/webhook` | уведомления ЮKassa (проверка через API) |

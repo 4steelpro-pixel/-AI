@@ -3,10 +3,12 @@ import { getPool } from "@/lib/db/client";
 export async function listUserReports(userId: string) {
   const pool = getPool();
   const { rows } = await pool.query(
-    `select id, title, category, status, file_url, file_name, created_at
-     from reports
-     where user_id = $1
-     order by created_at desc`,
+    `select r.id, r.title, r.category, r.status, r.file_url, r.file_name, r.created_at
+     from reports r
+     left join users u on u.id = $1
+     where r.user_id = $1
+        or (u.email is not null and lower(r.customer_email) = lower(u.email))
+     order by r.created_at desc`,
     [userId],
   );
   return rows;

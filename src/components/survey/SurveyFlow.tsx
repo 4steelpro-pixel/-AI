@@ -44,6 +44,21 @@ function createSessionId() {
     : `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+/**
+ * Заголовки для обращения к API биллинга/анализа.
+ * Передаёт токен (если пользователь авторизован) и email доступа
+ * (если доступ был оплачен без регистрации).
+ */
+function accessHeaders(): HeadersInit {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("authToken");
+  const email = localStorage.getItem("pn_access_email");
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(email ? { "x-access-email": email } : {}),
+  };
+}
+
 export function SurveyFlow({ category }: { category: Category }) {
   const [sessionId] = useState(createSessionId);
   const [series, setSeries] = useState<QuestionSeries[]>(() => getBaseSeries(category));
@@ -72,9 +87,7 @@ export function SurveyFlow({ category }: { category: Category }) {
     let cancelled = false;
     const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
 
-    fetch("/api/billing/access", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
+    fetch("/api/billing/access", { headers: accessHeaders() })
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
@@ -180,14 +193,10 @@ export function SurveyFlow({ category }: { category: Category }) {
     trackEvent("survey_submitted", sessionId, { category });
 
     const payload = buildAnalysisPayload(category, sessionId, answers);
-    const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json", ...accessHeaders() },
         body: JSON.stringify(payload),
       });
       const rawText = await res.text();

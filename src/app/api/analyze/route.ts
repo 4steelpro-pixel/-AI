@@ -64,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await saveReport(parsedRequest.data, parsedReport.data, access.userId);
+    await saveReport(parsedRequest.data, parsedReport.data, access.userId, access.email);
   } catch (error) {
     console.error("Не удалось сохранить отчёт в БД:", error);
   }
