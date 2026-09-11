@@ -277,9 +277,22 @@ pm2 restart profnavigator
 ```env
 YOOKASSA_SHOP_ID=1433965
 YOOKASSA_SECRET_KEY=live_ваш_секретный_ключ
-YOOKASSA_SEND_RECEIPT=false
+YOOKASSA_SEND_RECEIPT=true
+YOOKASSA_VAT_CODE=1
 APP_BASE_URL=https://profnaviai.ru
 ```
+
+> ⚠️ **Важно про чеки.** Если в магазине ЮKassa включена фискализация
+> (чеки формирует ЮKassa), объект `receipt` в запросе **обязателен**, иначе платёж
+> отклоняется с ошибкой `Receipt is missing or illegal`. Проверить настройку магазина:
+>
+> ```bash
+> cd /var/www/profnavigator
+> node -e "require('@next/env').loadEnvConfig(process.cwd()); const s=process.env.YOOKASSA_SHOP_ID,k=process.env.YOOKASSA_SECRET_KEY; fetch('https://api.yookassa.ru/v3/me',{headers:{Authorization:'Basic '+Buffer.from(s+':'+k).toString('base64')}}).then(async r=>console.log(r.status,(await r.text())))"
+> ```
+>
+> В ответе смотрите `fiscalization.enabled` и `test` (боевой/тестовый магазин).
+> Ставка НДС задаётся `YOOKASSA_VAT_CODE` (1 — без НДС; для ИП на УСН/НПД обычно 1).
 
 После изменения `.env.local` пересоберите и перезапустите приложение:
 

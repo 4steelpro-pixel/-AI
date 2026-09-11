@@ -157,12 +157,13 @@ export async function POST(request: NextRequest) {
       [paymentId],
     );
     console.error("Ошибка создания платежа в ЮKassa:", error);
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "Не удалось создать платёж",
-      },
-      { status: 502 },
-    );
+
+    const raw = error instanceof Error ? error.message : "Не удалось создать платёж";
+    // Подсказка при проблемах с фискализацией (чек обязателен, если она включена)
+    const message = /receipt|чек/i.test(raw)
+      ? `${raw} Проверьте настройки фискализации: YOOKASSA_SEND_RECEIPT и YOOKASSA_VAT_CODE.`
+      : raw;
+
+    return NextResponse.json({ ok: false, error: message }, { status: 502 });
   }
 }

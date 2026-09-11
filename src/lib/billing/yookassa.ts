@@ -29,15 +29,32 @@ function authHeader(): string {
   return `Basic ${Buffer.from(`${shopId}:${secret}`).toString("base64")}`;
 }
 
-function buildReceipt(amountCents: number, email: string) {
+/**
+ * Нужно ли отправлять чек (объект receipt).
+ *
+ * По умолчанию чек ОТПРАВЛЯЕТСЯ: если в магазине включена фискализация
+ * (чеки формирует ЮKassa), без объекта receipt платёж отклоняется с ошибкой
+ * «Receipt is missing or illegal». Отключить можно YOOKASSA_SEND_RECEIPT=false.
+ */
+function isReceiptEnabled(): boolean {
+  return process.env.YOOKASSA_SEND_RECEIPT !== "false";
+}
+
+/** Ставка НДС для чека: 1 — без НДС (значение по умолчанию). */
+function receiptVatCode(): number {
+  const raw = Number(process.env.YOOKASSA_VAT_CODE);
+  return Number.isInteger(raw) && raw > 0 ? raw : 1;
+}
+
+function buildReceipt(amountCents: number, email: string, description: string) {
   return {
     customer: { email },
     items: [
       {
-        description: "Доступ к профориентационному тесту",
+        description: description.slice(0, 128),
         quantity: "1.00",
         amount: { value: (amountCents / 100).toFixed(2), currency: "RUB" },
-        vat_code: 1, // без НДС
+        vat_code: receiptVatCode(),
         payment_subject: "service",
         payment_mode: "full_payment",
       },
@@ -68,8 +85,8 @@ export async function createYooKassaPayment(params: {
     metadata: params.metadata,
   };
 
-  if (process.env.YOOKASSA_SEND_RECEIPT === "true" && params.customerEmail) {
-    body.receipt = buildReceipt(params.amountCents, params.customerEmail);
+  if (isReceiptEnabled() && params.customerEmail) {
+    body.receipt = buildReceipt(params.amountCents, params.customerEmail, params.description);
   }
 
   const response = await fetch(`${API_BASE}/payments`, {
