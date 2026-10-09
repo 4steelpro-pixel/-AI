@@ -1,11 +1,13 @@
 import { getPool } from "@/lib/db/client";
-import { verifyJwt } from "@/lib/auth/utils";
+import { verifyGuestAccessToken, verifyJwt } from "@/lib/auth/utils";
 import { getSettings } from "./settings";
 
-/** Заголовок, которым клиент передаёт email доступа (оплата без регистрации). */
+/** Устаревший заголовок оставлен только для плавной миграции существующих оплат. */
 export const ACCESS_EMAIL_HEADER = "x-access-email";
-/** Cookie с email доступа — дублирует заголовок для надёжности. */
+/** Устаревший cookie с открытым email; удаляется после обмена на защищённый токен. */
 export const ACCESS_EMAIL_COOKIE = "pn_access_email";
+/** Подписанный HttpOnly-cookie для гостевого оплаченного доступа. */
+export const ACCESS_TOKEN_COOKIE = "pn_access_token";
 
 export interface TestAccess {
   /** Разрешён ли доступ к прохождению теста. */
@@ -16,6 +18,8 @@ export interface TestAccess {
   userId: string | null;
   /** email, по которому выдан доступ (профиль или оплата). */
   email: string | null;
+  /** Доступ получен через старый email-cookie и его следует обменять на токен. */
+  usedLegacyEmail: boolean;
 }
 
 /** Извлекает Bearer-токен из заголовка Authorization. */
@@ -40,10 +44,20 @@ export function normalizeEmail(value: string | null | undefined): string | null 
  * Используется, когда пользователь оплатил доступ, но не регистрировался.
  */
 export function extractAccessEmail(request: Request): string | null {
+  const cookie = request.headers.get("cookie") ?? "";
+  const tokenMatch = cookie.match(new RegExp(`(?:^|;\\s*)${ACCESS_TOKEN_COOKIE}=([^;]+)`));
+  if (tokenMatch) {
+    try {
+      const email = verifyGuestAccessToken(decodeURIComponent(tokenMatch[1]));
+      if (email) return normalizeEmail(email);
+    } catch {
+      // Продолжаем проверку legacy-значений.
+    }
+  }
+
   const fromHeader = normalizeEmail(request.headers.get(ACCESS_EMAIL_HEADER));
   if (fromHeader) return fromHeader;
 
-  const cookie = request.headers.get("cookie") ?? "";
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${ACCESS_EMAIL_COOKIE}=([^;]+)`));
   if (!match) return null;
 
@@ -74,14 +88,23 @@ export async function checkTestAccess(request: Request): Promise<TestAccess> {
     }
   }
 
+  const cookie = request.headers.get("cookie") ?? "";
+  const hasAccessToken = new RegExp(`(?:^|;\\s*)${ACCESS_TOKEN_COOKIE}=`).test(cookie);
   let email = extractAccessEmail(request);
+  const usedLegacyEmail = Boolean(email && !hasAccessToken);
 
   if (!settings.require_payment) {
-    return { allowed: true, requirePayment: false, userId, email };
+    return { allowed: true, requirePayment: false, userId, email, usedLegacyEmail };
   }
 
   if (!userId && !email) {
-    return { allowed: false, requirePayment: true, userId: null, email: null };
+    return {
+      allowed: false,
+      requirePayment: true,
+      userId: null,
+      email: null,
+      usedLegacyEmail: false,
+    };
   }
 
   const pool = getPool();
@@ -97,7 +120,7 @@ export async function checkTestAccess(request: Request): Promise<TestAccess> {
   }
 
   if (!email) {
-    return { allowed: false, requirePayment: true, userId, email: null };
+    return { allowed: false, requirePayment: true, userId, email: null, usedLegacyEmail: false };
   }
 
   const { rows } = await pool.query(
@@ -108,5 +131,5 @@ export async function checkTestAccess(request: Request): Promise<TestAccess> {
     [userId, email],
   );
 
-  return { allowed: rows.length > 0, requirePayment: true, userId, email };
+  return { allowed: rows.length > 0, requirePayment: true, userId, email, usedLegacyEmail };
 }

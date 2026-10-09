@@ -1,5 +1,6 @@
 import type { Answers, Category } from "./types";
 import { AI_DIALOGUE_POOL, SETTLEMENT_TYPES } from "./questions";
+import { PERSONAL_DATA_CONSENT_VERSION } from "@/lib/privacy/constants";
 
 const POPULATION_BY_SETTLEMENT: Record<string, string> = {
   megapolis: "1000000+",
@@ -27,6 +28,7 @@ export function buildAnalysisPayload(
   category: Category,
   sessionId: string,
   answers: Answers,
+  consentSubject: "adult" | "teen_14_17" | "legal_representative",
 ) {
   const settlementType = asString(answers.settlementType);
 
@@ -40,6 +42,11 @@ export function buildAnalysisPayload(
       locale: "ru-RU",
       sessionId,
       completedAt: new Date().toISOString(),
+      consent: {
+        granted: true as const,
+        documentVersion: PERSONAL_DATA_CONSENT_VERSION,
+        subjectAgeGroup: consentSubject,
+      },
     },
     geo: {
       country: asString(answers.country) || "Россия",

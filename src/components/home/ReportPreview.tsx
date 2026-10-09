@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const LEVEL_WIDTH: Record<string, string> = {
   низкая: "33%",
   низкий: "33%",
@@ -29,7 +31,7 @@ export function ReportPreview() {
     <section className="mt-24 w-full max-w-2xl">
       <h2 className="text-2xl font-semibold text-slate-800 sm:text-3xl">Пример из отчёта</h2>
       <p className="mt-2 text-slate-500">Так выглядит одна из десяти профессий в вашем отчёте.</p>
-      <div className="mt-6 rounded-2xl border border-brand-surface bg-white p-6 text-left shadow-sm">
+      <div className="mt-6 rounded-3xl border border-brand-surface/80 bg-white/75 p-6 text-left shadow-[0_12px_35px_rgba(1,112,132,0.07)] backdrop-blur-sm">
         <div className="flex items-baseline gap-2">
           <span className="text-sm font-semibold text-brand">1.</span>
           <h3 className="text-xl font-semibold text-slate-800">Специалист по искусственному интеллекту</h3>
@@ -50,17 +52,16 @@ export function ReportPreview() {
           </dd>
         </div>
       </div>
-      <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-brand-surface bg-white p-6 text-center shadow-sm">
+      <div className="mt-6 flex flex-col items-center gap-2 rounded-3xl border border-brand-surface/80 bg-white/75 p-6 text-center shadow-[0_12px_35px_rgba(1,112,132,0.07)] backdrop-blur-sm">
         <p className="text-slate-600">
           Хотите увидеть полный отчёт? Скачайте пример — в нём нет персональных данных.
         </p>
-        <a
-          href="/example-report.pdf"
-          download
+        <Link
+          href="/example-report"
           className="mt-2 rounded-full bg-brand px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-brand-hover"
         >
-          Скачать пример отчёта (PDF)
-        </a>
+          Открыть пример отчёта
+        </Link>
       </div>
     </section>
   );

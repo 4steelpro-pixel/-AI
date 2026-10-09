@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { PERSONAL_DATA_CONSENT_VERSION } from "@/lib/privacy/constants";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -18,7 +19,13 @@ export default function RegisterPage() {
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, fullName }),
+      body: JSON.stringify({
+        email,
+        password,
+        fullName,
+        consentGranted: true,
+        consentVersion: PERSONAL_DATA_CONSENT_VERSION,
+      }),
     });
     const data = await response.json();
     if (data.ok) {
@@ -48,11 +55,12 @@ export default function RegisterPage() {
             className="mt-0.5 h-4 w-4 shrink-0"
           />
           <span>
-            Я согласен на обработку персональных данных в соответствии с{" "}
+            Я даю отдельное согласие на обработку персональных данных (редакция{" "}
+            {PERSONAL_DATA_CONSENT_VERSION}) на условиях{" "}
             <a href="/consent" target="_blank" className="text-emerald-700 underline">
-              согласием на обработку персональных данных
+              согласия на обработку персональных данных
             </a>{" "}
-            и{" "}
+            и подтверждаю, что ознакомлен(а) с{" "}
             <a href="/privacy" target="_blank" className="text-emerald-700 underline">
               политикой конфиденциальности
             </a>

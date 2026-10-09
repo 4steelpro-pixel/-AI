@@ -28,6 +28,21 @@ export function verifyJwt(token: string) {
   return jwt.verify(token, JWT_SECRET) as { sub: string; role?: string };
 }
 
+export function signGuestAccessToken(email: string) {
+  return jwt.sign({ purpose: "paid_access", email }, JWT_SECRET, { expiresIn: "365d" });
+}
+
+export function verifyGuestAccessToken(token: string): string | null {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { purpose?: string; email?: string };
+    return payload.purpose === "paid_access" && typeof payload.email === "string"
+      ? payload.email
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function createOtpCode() {
   return crypto.randomInt(100000, 999999).toString();
 }

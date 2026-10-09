@@ -6,6 +6,11 @@ export const analysisRequestSchema = z.object({
     locale: z.string(),
     sessionId: z.string(),
     completedAt: z.string(),
+    consent: z.object({
+      granted: z.literal(true),
+      documentVersion: z.string(),
+      subjectAgeGroup: z.enum(["adult", "teen_14_17", "legal_representative"]),
+    }),
   }),
   geo: z.object({
     country: z.string(),

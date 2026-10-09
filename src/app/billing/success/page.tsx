@@ -4,20 +4,6 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-/** Ключ, по которому сохраняем email доступа (оплата без регистрации). */
-export const ACCESS_EMAIL_KEY = "pn_access_email";
-
-function saveAccessEmail(email: string) {
-  try {
-    localStorage.setItem(ACCESS_EMAIL_KEY, email);
-    document.cookie = `${ACCESS_EMAIL_KEY}=${encodeURIComponent(email)}; path=/; max-age=${
-      60 * 60 * 24 * 365
-    }; SameSite=Lax`;
-  } catch {
-    // localStorage/cookie могут быть недоступны — не критично
-  }
-}
-
 type Status = "loading" | "pending" | "succeeded" | "canceled" | "error";
 
 const MAX_POLLS = 10;
@@ -49,7 +35,6 @@ function SuccessContent() {
       }
       if (data.email) {
         setEmail(data.email);
-        saveAccessEmail(data.email);
       }
       if (data.status === "succeeded") setStatus("succeeded");
       else if (data.status === "canceled") setStatus("canceled");

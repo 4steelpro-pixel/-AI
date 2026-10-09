@@ -26,18 +26,9 @@ function BillingContent() {
       .catch(() => {});
   }, []);
 
-  // Подставляем email: сохранённый ранее или из профиля
+  // Подставляем email из профиля. Email гостя больше не хранится в браузере.
   useEffect(() => {
     let cancelled = false;
-
-    const timer = setTimeout(() => {
-      try {
-        const saved = localStorage.getItem("pn_access_email");
-        if (saved && !cancelled) setEmail(saved);
-      } catch {
-        // localStorage может быть недоступен — не критично
-      }
-    }, 0);
 
     const token = localStorage.getItem("authToken");
     if (token) {
@@ -51,7 +42,6 @@ function BillingContent() {
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
     };
   }, []);
 
@@ -116,13 +106,6 @@ function BillingContent() {
       if (!data.ok) {
         setError(data.error || "Ошибка оплаты");
         return;
-      }
-
-      // Запоминаем email, чтобы доступ к тесту работал и без регистрации
-      try {
-        localStorage.setItem("pn_access_email", trimmedEmail);
-      } catch {
-        // localStorage может быть недоступен — не критично
       }
 
       if (data.confirmationUrl) {

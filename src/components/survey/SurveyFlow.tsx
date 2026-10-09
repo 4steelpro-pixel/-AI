@@ -12,6 +12,7 @@ import { buildAnalysisPayload } from "@/lib/survey/payload";
 import { trackEvent } from "@/lib/analytics/track";
 import type { Answers, AnswerValue, Category, Question, QuestionSeries } from "@/lib/survey/types";
 import type { CareerReport } from "@/lib/report/schema";
+import { PERSONAL_DATA_CONSENT_VERSION } from "@/lib/privacy/constants";
 
 const CATEGORY_TITLE: Record<Category, string> = {
   teen: "Для подростков 13–17 лет",
@@ -46,16 +47,14 @@ function createSessionId() {
 
 /**
  * Заголовки для обращения к API биллинга/анализа.
- * Передаёт токен (если пользователь авторизован) и email доступа
- * (если доступ был оплачен без регистрации).
+ * Передаёт токен, если пользователь авторизован. Гостевой оплаченный доступ
+ * подтверждается защищённым HttpOnly-cookie автоматически.
  */
 function accessHeaders(): HeadersInit {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem("authToken");
-  const email = localStorage.getItem("pn_access_email");
   return {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(email ? { "x-access-email": email } : {}),
   };
 }
 
@@ -74,6 +73,9 @@ export function SurveyFlow({ category }: { category: Category }) {
   const [exportError, setExportError] = useState<string | null>(null);
   const [accessChecked, setAccessChecked] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [teenConsentRole, setTeenConsentRole] = useState<
+    "teen_14_17" | "legal_representative" | null
+  >(null);
 
 
   useEffect(() => {
@@ -184,7 +186,7 @@ export function SurveyFlow({ category }: { category: Category }) {
   }
 
   async function handleSubmit() {
-    if (!consent) {
+    if (!consent || (category === "teen" && !teenConsentRole)) {
       setSubmitError("Необходимо согласие на обработку персональных данных");
       return;
     }
@@ -192,7 +194,12 @@ export function SurveyFlow({ category }: { category: Category }) {
     setSubmitError(null);
     trackEvent("survey_submitted", sessionId, { category });
 
-    const payload = buildAnalysisPayload(category, sessionId, answers);
+    const payload = buildAnalysisPayload(
+      category,
+      sessionId,
+      answers,
+      category === "adult" ? "adult" : teenConsentRole!,
+    );
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -363,6 +370,20 @@ export function SurveyFlow({ category }: { category: Category }) {
             </p>
           ) : null}
 
+          {category === "teen" ? (
+            <fieldset className="rounded-xl border border-brand-surface bg-brand-surface/40 p-4 text-sm text-slate-600">
+              <legend className="px-1 font-medium text-slate-700">Кто предоставляет согласие</legend>
+              <label className="mt-2 flex items-start gap-2">
+                <input type="radio" name="teen-consent-role" checked={teenConsentRole === "teen_14_17"} onChange={() => setTeenConsentRole("teen_14_17")} className="mt-0.5" />
+                <span>Мне исполнилось 14 лет, согласие предоставляю самостоятельно.</span>
+              </label>
+              <label className="mt-2 flex items-start gap-2">
+                <input type="radio" name="teen-consent-role" checked={teenConsentRole === "legal_representative"} onChange={() => setTeenConsentRole("legal_representative")} className="mt-0.5" />
+                <span>Я являюсь законным представителем пользователя младше 14 лет.</span>
+              </label>
+            </fieldset>
+          ) : null}
+
           <label className="flex items-start gap-2 rounded-xl border border-brand-surface bg-brand-surface/40 p-4 text-sm text-slate-600">
             <input
               type="checkbox"
@@ -371,31 +392,11 @@ export function SurveyFlow({ category }: { category: Category }) {
               className="mt-0.5 h-4 w-4 shrink-0"
             />
             <span>
-              {category === "teen" ? (
-                <>
-                  Я подтверждаю, что мне исполнилось 14 лет, и я даю согласие на обработку
-                  персональных данных в соответствии с{" "}
-                  <a href="/consent" target="_blank" className="text-brand underline">
-                    согласием на обработку персональных данных
-                  </a>{" "}
-                  и{" "}
-                  <a href="/privacy" target="_blank" className="text-brand underline">
-                    политикой конфиденциальности
-                  </a>
-                  . Если мне меньше 14 лет — согласие даёт мой законный представитель.
-                </>
-              ) : (
-                <>
-                  Я даю согласие на обработку персональных данных в соответствии с{" "}
-                  <a href="/consent" target="_blank" className="text-brand underline">
-                    согласием на обработку персональных данных
-                  </a>{" "}
-                  и{" "}
-                  <a href="/privacy" target="_blank" className="text-brand underline">
-                    политикой конфиденциальности
-                  </a>
-                </>
-              )}
+              Я даю отдельное согласие на обработку персональных данных (редакция{" "}
+              {PERSONAL_DATA_CONSENT_VERSION}) на условиях{" "}
+              <a href="/consent" target="_blank" className="text-brand underline">согласия</a>.
+              С{" "}<a href="/privacy" target="_blank" className="text-brand underline">политикой обработки данных</a>{" "}
+              я ознакомлен(а).
             </span>
           </label>
 

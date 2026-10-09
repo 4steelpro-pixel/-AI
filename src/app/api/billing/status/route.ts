@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPool } from "@/lib/db/client";
 import { fetchYooKassaPayment } from "@/lib/billing/yookassa";
+import { signGuestAccessToken } from "@/lib/auth/utils";
+import { ACCESS_EMAIL_COOKIE, ACCESS_TOKEN_COOKIE } from "@/lib/billing/access";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -60,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     const metadata = (payment.metadata ?? {}) as Record<string, unknown>;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       paymentId,
       status,
@@ -68,6 +70,17 @@ export async function GET(request: NextRequest) {
       amountCents: payment.amount_cents,
       category: typeof metadata.category === "string" ? metadata.category : null,
     });
+    if (status === "succeeded" && payment.customer_email) {
+      response.cookies.set(ACCESS_TOKEN_COOKIE, signGuestAccessToken(payment.customer_email), {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+      response.cookies.set(ACCESS_EMAIL_COOKIE, "", { path: "/", maxAge: 0 });
+    }
+    return response;
   } catch (error) {
     console.error("Ошибка проверки статуса платежа:", error);
     return NextResponse.json({ ok: false, error: "Ошибка проверки статуса" }, { status: 500 });

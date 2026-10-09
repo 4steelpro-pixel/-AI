@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CookieSettingsButton } from "./CookieSettingsButton";
 
 export function Footer() {
   return (
@@ -12,6 +13,10 @@ export function Footer() {
           <Link href="/consent" className="hover:text-brand">
             Согласие на обработку персональных данных
           </Link>
+          <Link href="/cookies" className="hover:text-brand">
+            Политика cookie
+          </Link>
+          <CookieSettingsButton />
           <a href="mailto:info@profnaviai.ru" className="hover:text-brand">
             info@profnaviai.ru
           </a>

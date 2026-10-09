@@ -42,7 +42,7 @@ export function Faq() {
         {items.map((item) => (
           <details
             key={item.question}
-            className="group rounded-xl border border-brand-surface bg-white p-4 text-left open:bg-brand-surface/40"
+            className="group rounded-2xl border border-brand-surface/80 bg-white/75 p-4 text-left shadow-[0_8px_24px_rgba(1,112,132,0.05)] backdrop-blur-sm transition-colors open:bg-white"
           >
             <summary className="cursor-pointer list-none font-medium text-slate-800 marker:content-none">
               <span className="flex items-center justify-between gap-2">

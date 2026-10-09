@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Link from "next/link";
 import { CategoryCard } from "@/components/CategoryCard";
 import { StartAnalysisButton } from "@/components/StartAnalysisButton";
 import { Footer } from "@/components/Footer";
@@ -15,17 +15,28 @@ import { SpheresShowcase } from "@/components/home/SpheresShowcase";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center bg-white px-6 py-20 text-center sm:py-28">
-      <Image
-        src="/logo.png"
-        alt="ПрофНавигатор AI"
-        width={180}
-        height={180}
-        priority
-        unoptimized
-      />
+    <main className="flex flex-1 flex-col items-center bg-[#f3fbf8] px-4 pb-20 text-center sm:px-6 sm:pb-28">
+      <nav
+        aria-label="Основная навигация"
+        className="flex w-full max-w-5xl items-center justify-between gap-2 py-5 text-xs sm:text-sm"
+      >
+        <Link href="/" className="font-semibold text-slate-800">
+          ПрофНавигатор <span className="text-brand">AI</span>
+        </Link>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Link href="/register" className="text-slate-500 transition-colors hover:text-brand">
+            Регистрация
+          </Link>
+          <Link
+            href="/login"
+            className="rounded-full border border-brand/25 bg-white/70 px-3 py-2 font-medium text-brand transition-colors hover:bg-white sm:px-4"
+          >
+            Войти
+          </Link>
+        </div>
+      </nav>
 
-      <h1 className="mt-8 text-4xl font-semibold tracking-tight text-slate-800 sm:text-5xl">
+      <h1 className="mt-12 text-3xl font-semibold tracking-tight text-slate-800 sm:mt-16 sm:text-5xl">
         ПрофНавигатор AI
       </h1>
       <p className="mt-4 max-w-xl text-lg text-slate-500">
@@ -41,14 +52,14 @@ export default function Home() {
 
       <HeroIllustration />
 
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <a href="/register" className="rounded-full border border-brand px-5 py-3 text-sm font-medium text-brand">Регистрация</a>
-        <a href="/login" className="rounded-full bg-brand px-5 py-3 text-sm font-medium text-white">Войти в аккаунт</a>
-        <a href="/account" className="rounded-full border border-brand px-5 py-3 text-sm font-medium text-brand">Личный кабинет</a>
-      </div>
-
-
       <StartAnalysisButton />
+      <Link
+        href="/example-report"
+        className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-slate-500 underline decoration-brand/40 underline-offset-4 transition-colors hover:text-brand"
+      >
+        Посмотреть пример отчёта
+        <span aria-hidden="true">→</span>
+      </Link>
 
       <div
         id="categories"

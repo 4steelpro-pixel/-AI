@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://profnav-ai.ru";
+const BASE_URL = "https://profnaviai.ru";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
@@ -45,6 +45,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.5,
+    },
+    {
+      url: `${BASE_URL}/privacy`,
+      lastModified: new Date("2026-10-08"),
+      changeFrequency: "yearly",
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/consent`,
+      lastModified: new Date("2026-10-08"),
+      changeFrequency: "yearly",
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/cookies`,
+      lastModified: new Date("2026-10-08"),
+      changeFrequency: "yearly",
+      priority: 0.4,
     },
   ];
 }

@@ -12,9 +12,9 @@ export function CategoryCard({ href, title, description, icon: Icon }: CategoryC
   return (
     <Link
       href={href}
-      className="group flex flex-col gap-3 rounded-2xl border border-brand-surface bg-brand-surface/60 p-8 text-left transition-colors hover:bg-brand-surface"
+      className="group flex flex-col gap-3 rounded-3xl border border-brand-surface/80 bg-white/75 p-7 text-left shadow-[0_12px_35px_rgba(1,112,132,0.07)] backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_16px_40px_rgba(1,112,132,0.11)] sm:p-8"
     >
-      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-brand">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-surface/70 text-brand">
         <Icon className="h-6 w-6" />
       </span>
       <h3 className="text-xl font-semibold text-slate-800">{title}</h3>

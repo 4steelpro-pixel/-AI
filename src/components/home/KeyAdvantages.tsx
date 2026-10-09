@@ -57,7 +57,7 @@ export function KeyAdvantages() {
         {ADVANTAGES.map((adv) => (
           <div
             key={adv.title}
-            className="flex flex-col gap-3 rounded-2xl border border-brand-surface bg-white p-6 text-left shadow-sm"
+            className="flex flex-col gap-3 rounded-3xl border border-brand-surface/80 bg-white/75 p-6 text-left shadow-[0_12px_35px_rgba(1,112,132,0.07)] backdrop-blur-sm"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-surface text-brand">
               <adv.icon className="h-6 w-6" />

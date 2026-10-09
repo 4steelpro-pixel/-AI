@@ -5,6 +5,8 @@ import { requestCareerAnalysis } from "@/lib/report/yandexgpt";
 import { saveReport } from "@/lib/report/storage";
 import { logEvent } from "@/lib/analytics/events";
 import { checkTestAccess } from "@/lib/billing/access";
+import { PERSONAL_DATA_CONSENT_VERSION } from "@/lib/privacy/constants";
+import { getPool } from "@/lib/db/client";
 
 export async function POST(request: Request) {
   // Проверяем доступ к тесту до обращения к YandexGPT.
@@ -28,6 +30,31 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Некорректный формат данных анкеты", details: parsedRequest.error.flatten() },
       { status: 400 },
+    );
+  }
+
+  if (parsedRequest.data.meta.consent.documentVersion !== PERSONAL_DATA_CONSENT_VERSION) {
+    return NextResponse.json(
+      { error: "Необходимо подтвердить актуальную редакцию согласия" },
+      { status: 400 },
+    );
+  }
+
+  if (process.env.DATABASE_URL) {
+    await getPool().query(
+      `insert into consent_records
+         (session_id, user_id, consent_type, document_version, decision, subject_age_group, source)
+       values ($1, $2, 'personal_data', $3, 'granted', $4, 'survey')
+       on conflict (session_id, consent_type, document_version)
+         where session_id is not null and consent_type = 'personal_data'
+       do update set decision = 'granted', subject_age_group = excluded.subject_age_group,
+                     user_id = coalesce(excluded.user_id, consent_records.user_id), granted_at = now()`,
+      [
+        parsedRequest.data.meta.sessionId,
+        access.userId,
+        PERSONAL_DATA_CONSENT_VERSION,
+        parsedRequest.data.meta.consent.subjectAgeGroup,
+      ],
     );
   }
 

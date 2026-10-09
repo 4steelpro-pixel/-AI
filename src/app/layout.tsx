@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { CookieConsent } from "@/components/CookieConsent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://profnav-ai.ru"),
+  metadataBase: new URL("https://profnaviai.ru"),
   title: {
     default: "ПрофНавигатор AI — профориентация с помощью ИИ",
     template: "%s | ПрофНавигатор AI",
@@ -58,7 +59,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ru_RU",
-    url: "https://profnav-ai.ru",
+    url: "https://profnaviai.ru",
     siteName: "ПрофНавигатор AI",
     title: "ПрофНавигатор AI — профориентация с помощью ИИ",
     description:
@@ -80,7 +81,7 @@ export const metadata: Metadata = {
     images: ["/logo.png"],
   },
   alternates: {
-    canonical: "https://profnav-ai.ru",
+    canonical: "https://profnaviai.ru",
   },
   icons: {
     icon: "/logo.png",
@@ -100,6 +101,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-white text-slate-700">
         {children}
+        <CookieConsent />
         <script
           dangerouslySetInnerHTML={{
             __html: `
